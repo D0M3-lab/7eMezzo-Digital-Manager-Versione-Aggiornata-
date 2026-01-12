@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>7 e Mezzo Multiplayer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background: #1a472a;
+            color: white;
+        }
+
+        .card-table {
+            background: #2e7d32;
+            border-radius: 30px;
+            padding: 25px;
+        }
+
+        .card-val {
+            background: white;
+            color: black;
+            padding: 12px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 5px;
+            min-width: 50px;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .back {
+            background: #b71c1c;
+            color: white;
+        }
+
+        .turn {
+            border: 3px solid gold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container text-center py-4">
+
+        {% if view == "menu" %}
+
+            <h1>🃏 7 e Mezzo Online</h1>
+
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <form action="/add-player" method="post" class="card p-3 bg-dark">
+                        <h4>Crea Giocatore</h4>
+                        <input name="username" class="form-control my-2" placeholder="Nome" required>
+                        <button class="btn btn-success">Crea</button>
+                    </form>
+                </div>
+
+                <div class="col-md-4">
+                    <form action="/start-game" method="post" class="card p-3 bg-dark">
+                        <h4>Crea Tavolo</h4>
+                        <select name="player_id" class="form-select my-2">
+                            {% for p in players %}
+                                <option value="{{ p.id }}">{{ p.username }} (€{{ p.balance }})</option>
+                            {% endfor %}
+                        </select>
+                        <input name="bet" type="number" class="form-control my-2" placeholder="Puntata" required>
+                        <button class="btn btn-warning">Crea</button>
+                    </form>
+                </div>
+
+                <div class="col-md-4">
+                    <form action="/join" method="post" class="card p-3 bg-dark">
+                        <h4>Entra Tavolo</h4>
+                        <input name="code" class="form-control my-2" placeholder="Codice tavolo" required>
+                        <select name="player_id" class="form-select my-2">
+                            {% for p in players %}
+                                <option value="{{ p.id }}">{{ p.username }} (€{{ p.balance }})</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-info">Entra</button>
+                    </form>
+                </div>
+            </div>
+
+        {% else %}
+
+            <h3>Tavolo {{ table }}</h3>
+            <h5>{{ player.username }} — €{{ player.balance }} — Puntata €{{ bet }}</h5>
+
+            <div class="card-table mt-3">
+
+                <h4>Banco</h4>
+                {% for c in dealer_hand %}
+                    <div class="card-val">{{ c if c != 10 else 'K' }}</div>
+                {% endfor %}
+                {% if not game_over %}
+                    <div class="card-val back">?</div>
+                {% endif %}
+
+                <hr>
+
+                <h4>Tua mano ({{ player_score }})</h4>
+                {% for c in player_hand %}
+                    <div class="card-val {% if turn == player.id %}turn{% endif %}">
+                        {{ c if c != 10 else 'K' }}
+                    </div>
+                {% endfor %}
+
+                {% if not game_over %}
+                    {% if turn == player.id %}
+                        <div class="mt-3">
+                            <form action="/hit" method="post" style="display:inline;">
+                                <input type="hidden" name="table" value="{{ table }}">
+                                <input type="hidden" name="player" value="{{ player.id }}">
+                                <button class="btn btn-primary btn-lg">CARTA</button>
+                            </form>
+
+                            <form action="/stay" method="post" style="display:inline;">
+                                <input type="hidden" name="table" value="{{ table }}">
+                                <input type="hidden" name="player" value="{{ player.id }}">
+                                <button class="btn btn-danger btn-lg">STAI</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="mt-3">⏳ Attendi il tuo turno...</p>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-light text-dark fw-bold mt-3">
+                        {{ result_message }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+        {% endif %}
+    </div>
+
+    {% if view == "game" %}
+        <script>
+            setInterval(async () => {
+                const r = await fetch(window.location.href);
+                const text = await r.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                document.body.innerHTML = doc.body.innerHTML;
+            }, 1000);
+        </script>
+    {% endif %}
+
+</body>
+</html>
